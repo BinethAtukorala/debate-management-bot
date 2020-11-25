@@ -44,6 +44,12 @@ def no_of(service):
     return_list = [int(rows[0][0]), int(rows[0][2])]
     return return_list
 
+def get_event_details(service):
+    result = service.spreadsheets().values().get(
+        spreadsheetId=spreadsheet_id, range="J2:L2").execute()
+    rows = result.get('values', [])    
+    return rows[0][0], rows[0][1], rows[0][2]
+
 conn = create_connection(r"pythonsqlite.db")
 
 # Create table command
@@ -194,6 +200,32 @@ while(True):
 
         result = service.spreadsheets().values().update(
             spreadsheetId=spreadsheet_id, range="D2:D" + str(no_of_participants + 1), valueInputOption="USER_ENTERED", body=body).execute()
+
+    elif(cmd == "finalize"):
+        confirmation = input("Are you sure you want to finalize all and DM? (y/n) : ")
+        if(confirmation != "y"): 
+            continue
+        details = no_of(service)
+        no_of_participants, no_of_countries = details[0], details[1]
+
+        result = service.spreadsheets().values().get(
+            spreadsheetId=spreadsheet_id, range="A2:D" + str(no_of_participants + 1)).execute()
+        rows = result.get('values', [])
+        participants = []
+        for x in rows:
+            participants.append(x)
+            
+        time, date, venue = get_event_details(service)
+
+        messages = []
+
+        for x in participants:
+            msg = "{0}, your committee and country are {1}, {2}. Time - {3}, Date - {4}, Venue - {5}".format(x[0], x[3], x[2], time, date, venue)
+            messages.append([x[0], msg])
+        
+        for x in messages:
+            print(x)
+        # print(participants[0])
     
     elif(cmd == "exit"):
         flag = not flag
