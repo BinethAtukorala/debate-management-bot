@@ -6,6 +6,7 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 import sqlite3
 from sqlite3 import Error
+import random
 
 # If modifying these scopes, delete the file token.pickle.
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
@@ -36,7 +37,7 @@ def new_debate(conn, date, venue, time):
     except Error as e:
         print(e)
 
-def no_of_participants(service):
+def no_of(service):
     result = service.spreadsheets().values().get(
         spreadsheetId=spreadsheet_id, range="J5:L5").execute()
     rows = result.get('values', [])
@@ -87,6 +88,7 @@ if not creds or not creds.valid:
 service = build('sheets', 'v4', credentials=creds)
 
 spreadsheet_id = "1S1xLC0K_PzM727MKDYXpfe9u381Sw49XFuhYNjKLcvU"
+flag = True
 
 # Main loop
 
@@ -142,7 +144,7 @@ while(True):
 
 
     elif(cmd == "status"):
-        print('{0} participants registered.'.format(no_of_participants(service)))
+        print('{0} participants registered.'.format(no_of(service)[0]))
     
     elif(cmd == "end"):
         spreadsheet_id = ""
@@ -158,7 +160,7 @@ while(True):
             ]
         }
 
-        row_no = no_of_participants(service)[0] + 2
+        row_no = no_of(service)[0] + 2
 
         result = service.spreadsheets().values().update(
             spreadsheetId=spreadsheet_id, range="A{0}:F{0}".format(row_no),
@@ -166,8 +168,12 @@ while(True):
         
         print('{0} cells updated.'.format(result.get('updatedCells')))
 
-    elif("assign"): 
-        no_of_countries = no_of_participants(service)[1]
+    elif(cmd == "assign"): 
+        details = no_of(service)
+        if(details[0] > details[1]):
+            print("The amount of countries is not equal or larger than the amount of participants")
+            continue
+        no_of_participants, no_of_countries = details[0], details[1]
 
         result = service.spreadsheets().values().get(
             spreadsheetId=spreadsheet_id, range="H2:H" + str(no_of_countries + 1)).execute()
@@ -175,4 +181,20 @@ while(True):
         countries = []
         for x in rows:
             countries.append(x[0])
-        print(countries)
+
+        random.shuffle(countries)
+
+        data = []
+        for x in range(no_of_participants):
+            data.append([countries[x]])
+
+        body = {
+            'values': data
+        }
+
+        result = service.spreadsheets().values().update(
+            spreadsheetId=spreadsheet_id, range="D2:D" + str(no_of_participants + 1), valueInputOption="USER_ENTERED", body=body).execute()
+    
+    elif(cmd == "exit"):
+        flag = not flag
+        break
