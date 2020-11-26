@@ -61,6 +61,7 @@ sql_create_debates_table = """ CREATE TABLE IF NOT EXISTS debates (
                                     venue VARCHAR NOT NULL,
                                     sheet VARCHAR NOT NULL
                                 );
+                                
                             """
 
 if(conn != None):
@@ -93,7 +94,11 @@ if not creds or not creds.valid:
 
 service = build('sheets', 'v4', credentials=creds)
 
-spreadsheet_id = "1S1xLC0K_PzM727MKDYXpfe9u381Sw49XFuhYNjKLcvU"
+spreadsheet_id = ""
+
+with open("session.txt", "r") as file:
+    spreadsheet_id = file.readline()
+
 flag = True
 
 # Main loop
